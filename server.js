@@ -97,6 +97,8 @@
 //   }
 // });
 
+
+
 import express from "express";
 import mongoose from "mongoose";
 import review from "./models/review.js";
@@ -107,9 +109,11 @@ import multer from "multer";
 import User from "./models/User.js";
 import Comment from "./models/comments.js";
 import bcrypt from "bcrypt";
-
 import fs from "fs";
 const app = express();
+
+import cors from 'cors';
+app.use(cors({ origin: 'https://incandescent-paprenjak-b7aa38.netlify.app' }));
 
 app.use(express.json());
 
