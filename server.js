@@ -97,8 +97,6 @@
 //   }
 // });
 
-
-
 import express from "express";
 import mongoose from "mongoose";
 import review from "./models/review.js";
@@ -109,11 +107,10 @@ import multer from "multer";
 import User from "./models/User.js";
 import Comment from "./models/comments.js";
 import bcrypt from "bcrypt";
+import fileUpload from "express-fileupload";
+
 import fs from "fs";
 const app = express();
-
-import cors from 'cors';
-app.use(cors({ origin: 'https://incandescent-paprenjak-b7aa38.netlify.app' }));
 
 app.use(express.json());
 
@@ -419,46 +416,22 @@ app.put("/routes/users/update", async (req, res) => {
   }
 });
 
-// const upload = multer({ dest: "uploads/" });
-
-//uploading files to mongo db from the admin.html
 app.post("/routes/documents/upload",
   async (req, res) => {
     const { user,name, file, reviewers, approver, status } = req.body;
+    const base64Content = file.data.toString('base64');
     console.log(req.file);
-    // let aman=[];
-    // let mail=approver['email'];
-    // aman.unshift(mail);
-    // console.log(req.body)
     try {
+
       const titlename = name;
       console.log(name);
       const approversList = approver["email"];
-      // const reviewersList = reviewers["email"];
-      // const reviewersList = reviewers.map(reviewer => reviewer.email);
       const reviewersList = Array.isArray(reviewers) ? reviewers : [];
-      // const reviewersList = await User.find({
-      //   email: { $in: JSON.parse(reviewers) },
-      // });
-      // const approversList = await User.find({
-      //   email: {$in: JSON.stringify(approver) },
-      // });
-
-      // if (reviewersList.length !== JSON.parse(reviewers).length) {
-      //   return res.status(400).json({ error: "Some reviewers are invalid" });
-      // }
-
-      // if (approversList.length !== 1) {
-      //   return res
-      //     .status(400)
-      //     .json({ error: "There must be exactly one approver" });
-      // }
-
       const newDocument = new Document({
         user:user,
         name: titlename,
         size: "500kb",
-        file: file,
+        file: base64Content,
         reviewers: reviewersList,
         approver: approversList,
         status: status,
@@ -507,500 +480,6 @@ app.get("/adminPage.html", async (req, res) => {
   }
 });
 
-// to show the admin page
-// app.get("/UserPage.html", async (req, res) => {
-//   try {
-//     const file = fs.readFileSync("userPage.html", "utf-8");
-//     return res.send(file);
-//   } catch (err) {
-//     console.log("error in getting file line number 534" + err);
-//   }
-// });
-
-// app.get("/reviewer.html", async (req, res) => {
-//   try {
-//     // Extract email from the query parameter
-//     const mail = req.query;
-//     const email = Object.keys(mail)[0] || "No email provided";
-
-//     // Define the projection for MongoDB query
-//     const projection = {
-//       name: 1,
-//       status: 1,
-//       reviewers: 1,
-//       _id: 0,
-//       comments: 1,
-//       signature: 1,
-//     };
-
-//     // Fetch document data from the database
-//     const data = await DocData.find({}, projection);
-
-//     // Handle empty data scenario
-//     if (!data || data.length === 0) {
-//       res.send("<h3>No documents available for review</h3>");
-//       return;
-//     }
-
-//     // Construct the HTML response
-//     let html = `
-//     <!DOCTYPE html>
-//     <html lang="en">
-//     <head>
-//       <meta charset="UTF-8">
-//       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-//       <title>Reviewer Page</title>
-//       <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
-//       <style>
-//         body {
-//           font-family: Arial, sans-serif;
-//           background-color: #f4f4f9;
-//         }
-//         header, footer {
-//           background-color: #004aad;
-//           color: #fff;
-//           padding: 15px 20px;
-//           text-align: center;
-//         }
-//         header {
-//           display: flex;
-//           justify-content: space-between;
-//           align-items: center;
-//         }
-//         header h2 {
-//           margin: 0;
-//         }
-//         .container {
-//           max-width: 800px;
-//           margin: 20px auto;
-//         }
-//         .table th {
-//           background-color: #004aad;
-//           color: #fff;
-//         }
-//         .comment-section, .signature-section {
-//           margin-top: 20px;
-//         }
-//         footer {
-//           position: fixed;
-//           bottom: 0;
-//           width: 100%;
-//         }
-//       </style>
-//     </head>
-//     <body>
-
-//       <header>
-//         <h2>Medicing Enterprises - Reviewer Page</h2>
-//       </header>
-
-//       <div class="container">
-//         <h3>Assigned Documents</h3>
-
-//         <div class="form-group">
-//           <label for="email">Reviewer Email:</label>
-//           <input type="text" id="email" class="form-control" value="${email}" readonly>
-//         </div>
-
-//         <table class="table table-striped">
-//           <thead>
-//             <tr>
-//               <th>Name</th>
-//               <th>Reviewers</th>
-//               <th>Comments</th>
-//               <th>Signature</th>
-//               <th>Status</th>
-//             </tr>
-//           </thead>
-//           <tbody>
-//     `;
-
-//     // Populate document rows dynamically
-//     data.forEach((doc) => {
-//       html += `
-//         <tr>
-//           <td><button class="btn btn-link" onclick="populateDocuments('${
-//             doc.name
-//           }')">${doc.name}</button></td>
-//           <td>${doc.reviewers.join(", ")}</td>
-//           <td>${doc.comments || "N/A"}</td>
-//           <td>${doc.signature || "N/A"}</td>
-//           <td>${doc.status}</td>
-//         </tr>
-//       `;
-//     });
-
-//     html += `
-//           </tbody>
-//         </table>
-
-//         <div id="documentsList" class="comment-section"></div>
-
-//       </div>
-
-//       <footer>
-//         <p>© 2024 Medicing Enterprises</p>
-//       </footer>
-
-//       <script>
-//        async function populateDocuments(documentName) {
-//   const documentsList = document.getElementById("documentsList");
-//   documentsList.innerHTML = '';
-
-//   try {
-//     const response = await fetch('/documents/details', {
-//       method: 'POST',
-//       headers: { 'Content-Type': 'application/json' },
-//       body: JSON.stringify({ documentName }),
-//     });
-
-//     if (!response.ok) {
-//       throw new Error(\`Failed to fetch document details: ${response.statusText}\`);
-//     }
-
-//     const documentDetails = await response.json();
-//     console.log('Document Details:', documentDetails);
-
-//     if (!documentDetails) {
-//       documentsList.innerHTML = "<p>No details available for this document.</p>";
-//       return;
-//     }
-
-//     documentsList.innerHTML = \`
-//       <div class="card mb-3">
-//         <div class="card-body">
-//           <h5 class="card-title">Document: ${documentDetails.name}</h5>
-//           <a href="#" class="btn btn-info" target="_blank">Download Document</a>
-//           <div class="form-group mt-3">
-//             <label for="signature">Upload Signature</label>
-//             <input type="text" id="signature" class="form-control" required>
-//             <button class="btn btn-primary mt-2" onclick="submitSignature('${documentName}')">Submit Signature</button>
-//           </div>
-//           <div class="form-group mt-3">
-//             <label for="comment">Add Comment</label>
-//             <textarea id="comment" class="form-control" rows="3"></textarea>
-//             <button class="btn btn-primary mt-2" onclick="submitComment('${documentName}')">Submit Comment</button>
-//           </div>
-//         </div>
-//       </div>
-//     \`;
-//   } catch (error) {
-//     console.error('Error fetching document details:', error);
-//     documentsList.innerHTML = "<p>Error loading document details.</p>";
-//   }
-// }
-
-//         async function submitSignature(documentName) {
-//           const signature = document.getElementById("signature").value;
-//           const email = document.getElementById("email").value;
-
-//           if (!signature) {
-//             alert("Please upload a signature.");
-//             return;
-//           }
-
-//           try {
-//             const response = await fetch('/documents/submitSign', {
-//               method: 'PUT',
-//               headers: { 'Content-Type': 'application/json' },
-//               body: JSON.stringify({ email, signature, name: documentName })
-//             });
-
-//             if (response.ok) {
-//               alert("Signature submitted successfully!");
-//             } else {
-//               alert("Failed to submit signature.");
-//             }
-//           } catch (error) {
-//             console.error('Error submitting signature:', error);
-//           }
-//         }
-
-//         async function submitComment(documentName) {
-//           const comment = document.getElementById("comment").value;
-//           const email = document.getElementById("email").value;
-
-//           if (!comment) {
-//             alert("Please enter a comment.");
-//             return;
-//           }
-
-//           try {
-//             const response = await fetch('/documents/commentSign', {
-//               method: 'PUT',
-//               headers: { 'Content-Type': 'application/json' },
-//               body: JSON.stringify({ email, comment, name: documentName })
-//             });
-
-//             if (response.ok) {
-//               alert("Comment submitted successfully!");
-//             } else {
-//               alert("Failed to submit comment.");
-//             }
-//           } catch (error) {
-//             console.error('Error submitting comment:', error);
-//           }
-//         }
-//       </script>
-
-//     </body>
-//     </html>
-//     `;
-
-//     res.send(html);
-//   } catch (err) {
-//     console.error("Error in /reviewer.html route:", err);
-//     res
-//       .status(500)
-//       .send("<h3>An error occurred while loading the reviewer page.</h3>");
-//   }
-// });// to show the reviewer page
-
-// Express route to serve the reviewer page
-
-// app.get("/reviewer.html", async (req, res) => {
-//   const email = req.query.email;
-//   console.log("line number 849", email);
-//   try {
-//     // Extract email from query parameters
-
-//     if (!email) {
-//       return res
-//         .status(400)
-//         .send("<h3>Email is required to access this page.</h3>");
-//     }
-
-//     // Define the projection for MongoDB query
-//     const projection = {
-//       name: 1,
-//       status: 1,
-//       reviewers: 1,
-//       comments: 1,
-//       signature: 1,
-//       _id: 1,
-//     };
-
-//     // Fetch documents where the given email is a reviewer
-//     const documents = await DocData.find(
-//       { reviewers: email, status: "pending" },
-//       projection
-//     );
-
-//     // Handle case where the email is not assigned as a reviewer
-//     if (!documents || documents.length === 0) {
-//       return res.send(
-//         `<h3>No documents available for review for the provided email: ${email}</h3>`
-//       );
-//     }
-
-//     // Construct the HTML response
-//     let html = `
-//     <!DOCTYPE html>
-//     <html lang="en">
-//     <head>
-//       <meta charset="UTF-8">
-//       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-//       <title>Reviewer Page</title>
-//       <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
-//       <style>
-//         body {
-//           font-family: Arial, sans-serif;
-//           background-color: #f4f4f9;
-//         }
-//         header, footer {
-//           background-color: #004aad;
-//           color: #fff;
-//           padding: 15px 20px;
-//           text-align: center;
-//         }
-//         header {
-//           display: flex;
-//           justify-content: space-between;
-//           align-items: center;
-//         }
-//         header h2 {
-//           margin: 0;
-//         }
-//         .container {
-//           max-width: 800px;
-//           margin: 20px auto;
-//         }
-//         .table th {
-//           background-color: #004aad;
-//           color: #fff;
-//         }
-//         .comment-section, .signature-section {
-//           margin-top: 20px;
-//         }
-//         footer {
-//           position: fixed;
-//           bottom: 0;
-//           width: 100%;
-//         }
-//         #reviewButton{
-//           background-color: #004aad;
-//           color: #fff;
-//           border: none;
-//           border-radius: 5px;
-//           cursor: pointer;
-//         }
-//       </style>
-//     </head>
-//     <body>
-
-//       <header>
-//         <h2>Medicing Enterprises - Reviewer Page</h2>
-//       </header>
-
-//       <div class="container">
-//         <h3>Assigned Documents</h3>
-
-//         <div class="form-group">
-//           <label for="email">Reviewer Email:</label>
-//           <input type="text" id="email" class="form-control" value="${email}" readonly>
-//         </div>
-
-//         <table class="table table-striped">
-//           <thead>
-//             <tr>
-//               <th>Name</th>
-//               <th>Reviewers</th>
-//               <th>Comments</th>
-//               <th>Signature</th>
-//               <th>Status</th>
-//               <th>Review</th>
-//               <th>Signed</th>
-//             </tr>
-//           </thead>
-//           <tbody>
-//     `;
-
-//     // Populate document rows dynamically
-//     documents.forEach((doc) => {
-//       html += `
-//         <tr>
-//           <td><button class="btn btn-link" onclick="populateDocuments('${
-//             doc.name
-//           }')">${doc.name}</button></td>
-//           <td>${doc.reviewers.join(", ")}</td>
-//           <td>${doc.comments || "N/A"}</td>
-//           <td>${doc.signature || "N/A"}</td>
-//           <td>${doc.status}</td>
-//           <td><button id="reviewButton" onclick='reviewDocument("${
-//             doc.name
-//           }")'>Review</button></td>
-//           <td><button id="reviewButton" onclick='SignedDocument("${
-//             doc.name
-//           }")'>Signed</button></td>
-//         </tr>
-//       `;
-//     });
-
-//     html += `
-//           </tbody>
-//         </table>
-
-//         <div id="documentsList" class="comment-section"></div>
-
-//       </div>
-
-//       <footer>
-//         <p>© 2024 Medicing Enterprises - All Rights Reserved</p>
-//       </footer>
-
-//       <script>
-//       async function populateDocuments(documentName) {
-
-//         console.log(documentName);
-//         const documentsList = document.getElementById("documentsList");
-//         documentsList.innerHTML = '';
-
-//       try {
-//             const response = await fetch('/documents/details', {
-//               method: 'POST',
-//               headers: { 'Content-Type': 'application/json' },
-//               body: JSON.stringify({ documentName }),
-//             });
-
-//             if (!response.ok) {
-//               throw new Error('Failed to fetch document details: ');
-//             }
-
-//             const documentDetails = await response.json();
-//             console.log('Document Details:', documentDetails);
-
-//             if (!documentDetails) {
-//               documentsList.innerHTML = "<p>No details available for this document.</p>";
-//               return;
-//             }
-
-//             documentsList.innerHTML = \`
-//               <div class="card mb-3">
-//                 <div class="card-body">
-//                   <h5 class="card-title">Document: documentDetails.name</h5>
-//                   <a href="#" class="btn btn-info" target="_blank">Download Document</a>
-//                   <div class="form-group mt-3">
-//                     <label for="signature">Upload Signature</label>
-//                     <input type="text" id="signature" class="form-control" required>
-//                     <button class="btn btn-primary mt-2" onclick="submitSignature('documentName')">Submit Signature</button>
-//                   </div>
-//                   <div class="form-group mt-3">
-//                     <label for="comment">Add Comment</label>
-//                     <textarea id="comment" class="form-control" rows="3"></textarea>
-//                     <button class="btn btn-primary mt-2" onclick="submitComment('documentName')">Submit Comment</button>
-//                   </div>
-//                 </div>
-//               </div>
-//             \`;
-//           } catch (error) {
-//             console.error('Error fetching document details:', error);
-//             documentsList.innerHTML = "<p>Error loading document details.</p>";
-//           }
-//         }
-
-//       async function reviewDocument(documentName) {
-//       const email = document.getElementById("email").value;
-//       try {
-//         // Convert the mail object to query parameters
-//         const params = new URLSearchParams(documentName).toString();
-
-//         // Send the GET request with query parameters
-//         const response = await fetch(\`reviewerPageOpen?documentName\`, {
-//             method: 'GET',
-//             headers: {
-//                 'Content-Type': 'application/json'
-//             }
-//         });
-
-//         if (!response.ok) {
-//             throw new Error(\`HTTP error! Status: \`);
-//         }
-
-//         const data = await response.json(); // Parse the response
-//         console.log(data); // Process the response
-
-//         // Redirect to the reviewer page if needed
-//         window.location.href = \`reviewerPageOpen.html?documentName\`;
-//     } catch (error) {
-//         console.error('Error:', error); // Handle errors
-//     }
-// }
-//       </script>
-
-//     </body>
-//     </html>
-//     `;
-
-//     res.send(html);
-//   } catch (err) {
-//     console.error("Error in /reviewer.html route:", err);
-//     res
-//       .status(500)
-//       .send("<h3>An error occurred while loading the reviewer page.</h3>");
-//   }
-// });
-
-// import fs from "fs";
 
 
 app.get("/userPage", async (req, res) => {
@@ -1459,45 +938,6 @@ app.get("/reviewPage", async (req, res) => {
   }
 });
 
-// app.post('/users/add', async (req, res) => {
-//   try {
-//     console.log('Incoming data:', req.body);
-//     const { userName, userEmail, userRole } = req.body;
-
-//     // Validate required fields
-//     if (!userName || !userEmail || !userRole) {
-//       return res.status(400).json({ message: 'All fields are required' });
-//     }
-
-//     // Check if the user already exists
-//     const userExists = await User.findOne({ email: userEmail.toLowerCase() });
-//     if (userExists) {
-//       return res.status(400).json({ message: 'User with this email already exists' });
-//     }
-
-//     // Generate a password
-//     const password = `${userName}${userRole}`;
-//     const hashedPassword = (await bcrypt.hash(password, 10)).slice(0, 8);
-
-//     // Create a new user instance
-//     const newUser = new User({
-//       name: userName,
-//       email: userEmail.toLowerCase(),
-//       role: userRole,
-//       password: hashedPassword,
-//     });
-
-//     console.log('Prepared User:', newUser);
-
-//     // Save the user to the database
-//     await newUser.save();
-
-//     res.status(201).json({ message: 'User registered successfully', userId: newUser._id });
-//   } catch (error) {
-//     console.error('Error creating user:', error);
-//     res.status(500).json({ message: 'Server error', error });
-//   }
-// });
 app.post("/users/add", async (req, res) => {
   try {
     // Log the incoming request body
@@ -1519,9 +959,7 @@ app.post("/users/add", async (req, res) => {
     }
 
     // Generate a hashed password
-    const Userpassword = userName.slice(0, 3) + userRole.slice(0, 3);
-    // const hashedPassword = ((await bcrypt.hash(password, 10)).slice(0, 8,6)).toString();
-
+    const userpassword = userName.slice(0, 3) + userRole.slice(0, 3);
     // Create the new user
     const newUser = new User({
       name: userName,
@@ -1619,6 +1057,8 @@ app.get("/", async (req, res) => {
 //mailing
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
+import { CompositionListInstance } from "twilio/lib/rest/video/v1/composition.js";
+import { Console } from "console";
 
 //sending emails
 app.post("/routes/notifications/send", async (req, res) => {
