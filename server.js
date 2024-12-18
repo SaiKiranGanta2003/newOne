@@ -1020,7 +1020,7 @@ app.get("/reviewerPageOpen.html", async (req, res) => {
   try {
    
     const documentName = req.query.documentName || "No email provided";
-    let file = fs.readFileSync("/reviewPaged.html", "utf-8");
+    let file = fs.readFileSync("/reviewerPageOpen.html", "utf-8");
     file = file.replace("<!-- Dynamic email here -->", documentName);
     res.send(file);
   } catch (err) {
