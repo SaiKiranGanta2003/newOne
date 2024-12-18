@@ -108,7 +108,7 @@ import User from "./models/User.js";
 import Comment from "./models/comments.js";
 import bcrypt from "bcrypt";
 import fileUpload from "express-fileupload";
-import cros from 'cros';
+import cors from 'cors';
 
 
 
