@@ -56,5 +56,3 @@ const documentSchema = new mongoose.Schema({
 const modelName = 'DocumentData'; // Replace with your model 
 const Document = mongoose.models[modelName] || mongoose.model(modelName, documentSchema);
 export default Document;
-module.exports = Document;
-
