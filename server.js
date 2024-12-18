@@ -1057,8 +1057,8 @@ app.get("/", async (req, res) => {
 //mailing
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
-import { CompositionListInstance } from "twilio/lib/rest/video/v1/composition.js";
-import { Console } from "console";
+// import { CompositionListInstance } from "twilio/lib/rest/video/v1/composition.js";
+// import { Console } from "console";
 
 //sending emails
 app.post("/routes/notifications/send", async (req, res) => {
