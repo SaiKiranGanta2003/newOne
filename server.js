@@ -108,10 +108,14 @@ import User from "./models/User.js";
 import Comment from "./models/comments.js";
 import bcrypt from "bcrypt";
 import fileUpload from "express-fileupload";
+import cros from 'cros';
+
+
+
 
 import fs from "fs";
 const app = express();
-
+app.use(cors({ origin: 'https://incandescent-paprenjak-b7aa38.netlify.app' }));
 app.use(express.json());
 
 const storage = multer.diskStorage({
