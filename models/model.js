@@ -1,4 +1,6 @@
-import mongoose, { model } from "mongoose";
+import mongoose from "mongoose";
+import pkg from "mongoose";
+const { model } = pkg;
 
 const userSchema = mongoose.Schema(
   {
