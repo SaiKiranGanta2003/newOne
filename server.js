@@ -1726,6 +1726,14 @@ app.get("/getUsers", async (req, res) => {
 //   next;
 // });
 
+app.get('/demo2.html', (req, res) => {
+  const file = fs.readFileSync('/demo2.html', "utf-8");
+  
+  // Set the correct Content-Type for an HTML file
+  res.setHeader("Content-Type", "text/html");
+  return res.send(file);
+});
+
 
 // // Helper function to send email when a comment is submitted
 function sendCommentNotification(userId, comment, document) {
