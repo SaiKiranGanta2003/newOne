@@ -1,4 +1,4 @@
-import {Schema, model } from 'mongoose';
+
 import mongoose from 'mongoose';
 // Define the Document Schema
 const documentSchema = new mongoose.Schema({
