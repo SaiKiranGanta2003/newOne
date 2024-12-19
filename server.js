@@ -108,14 +108,10 @@ import User from "./models/User.js";
 import Comment from "./models/comments.js";
 import bcrypt from "bcrypt";
 import fileUpload from "express-fileupload";
-import cors from 'cors';
-
-
-
 
 import fs from "fs";
 const app = express();
-app.use(cors({ origin: 'https://incandescent-paprenjak-b7aa38.netlify.app' }));
+
 app.use(express.json());
 
 const storage = multer.diskStorage({
@@ -197,7 +193,7 @@ app.get("/routes/showUsers", async (req, res) => {
 
 app.get('/reigeister.html',async(req,res)=>{
   try {
-    const file = fs.readFileSync("reigeister.html", "utf-8");
+    const file = fs.readFileSync("/reigeister.html", "utf-8");
     return res.send(file);
   } catch (err) {
     console.log("error in getting file line number 524" + err);
@@ -206,12 +202,69 @@ app.get('/reigeister.html',async(req,res)=>{
 
   app.get('/forgetPassword.html',async(req,res)=>{
     try {
-      const file = fs.readFileSync("forgetPassword.html", "utf-8");
+      const file = fs.readFileSync("/forgetPassword.html", "utf-8");
       return res.send(file);
     } catch (err) {
       console.log("error in getting file line number 524" + err);
     }
     });
+
+
+import { SMTPClient } from 'emailjs';
+
+
+// Configure the SMTP client
+const client = new SMTPClient({
+  user: 'gantasai007@gmail.com', // Your email
+  password: 'jjts snww jrdc dajc', // Your email password or app password
+  host: 'smtp.gmail.com', // SMTP server (Gmail in this example)
+  ssl: true, // Use SSL (or TLS for some servers)
+});
+
+// Function to send email
+
+app.post("/sendEmailForget",async(req,res)=>{
+  try {
+    const { to, otp } = req.body;
+    console.log(to,otp)
+    const text=`Dear User,
+
+You recently requested to reset your password for your account. To proceed with the password reset, please use the following One-Time Password (OTP):
+
+Your OTP: ${otp} 
+
+If you did not request this password reset, please ignore this email or contact our support team immediately at [support email or phone number].
+
+Best Regards,
+MEDICING ENTERPRISES
+ADMIN TEAM
+`
+    
+    
+    async function sendEmail() {
+      try {
+        const message = await client.sendAsync({
+          text:text,
+          from: "gantasai007@gmail.com",
+          to: to,
+          subject: 'Forget Password OTP',
+        });
+        console.log('Email sent successfully!', message);
+      } catch (error) {
+        console.error('Error sending email:', error);
+      }
+    }
+    sendEmail();
+    
+    return res.status(200).json({message:"email sent"});
+  } catch (err) {
+    console.log("error in sending email line number 555" + err);
+  }
+    })
+
+
+
+
 
 
 app.post('/searchUser', async (req, res) => {
@@ -338,6 +391,9 @@ app.post('/createPassword',async(req,res)=>{
 })
 
 
+
+
+
 app.post("/documents/getDocumentName", async (req, res) => {
   try {
     const documentName = await DocData.findOne();
@@ -364,7 +420,12 @@ app.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const user = await userSchema.findOne({ email: email.toLowerCase() });
+    const user = await userSchema.findOne({
+      $or: [
+        { email: email.toLowerCase() },
+        { name: email}
+      ]
+    });
     // console.log("line number 462", user)
 
     if (!user) {
@@ -388,7 +449,8 @@ app.post("/login", async (req, res) => {
       user: {
         email: user.email,
         role: user.role,
-        status: user.status
+        status: user.status,
+        name: user.name
       },
     });
   } catch (err) {
@@ -423,21 +485,23 @@ app.put("/routes/users/update", async (req, res) => {
 app.post("/routes/documents/upload",
   async (req, res) => {
     const { user,name, file, reviewers, approver, status } = req.body;
-    const base64Content = file.data.toString('base64');
-    console.log(req.file);
     try {
 
       const titlename = name;
-      console.log(name);
-      const approversList = approver["email"];
-      const reviewersList = Array.isArray(reviewers) ? reviewers : [];
+      const approversList = [];
+      approversList.unshift(JSON.parse(approver).email);
+      let reviewersList = [];
+      for(let i=0;i<reviewers.length;i++){
+        reviewersList.unshift((reviewers[i]).email);
+      }
+      console.log("reviwers")
+      console.log(reviewersList)
       const newDocument = new Document({
         user:user,
         name: titlename,
-        size: "500kb",
-        file: base64Content,
+        file: file,
         reviewers: reviewersList,
-        approver: approversList,
+        approver: approversList ,
         status: status,
       });
       await newDocument.save();
@@ -468,7 +532,7 @@ app.get("/routes/showDocuments", async (req, res) => {
 // to show the log in page
 app.get("/index.html", async (req, res) => {
   try {
-    const file = fs.readFileSync("index.html", "utf-8");
+    const file = fs.readFileSync("/index.html", "utf-8");
     return res.send(file);
   } catch (err) {
     console.log("error in getting file line number 524" + err);
@@ -477,7 +541,7 @@ app.get("/index.html", async (req, res) => {
 
 app.get("/adminPage.html", async (req, res) => {
   try {
-    const file = fs.readFileSync("adminPage.html", "utf-8");
+    const file = fs.readFileSync("/adminPage.html", "utf-8");
     return res.send(file);
   } catch (err) {
     console.log("error in getting file line number 524" + err);
@@ -491,7 +555,7 @@ app.get("/userPage", async (req, res) => {
    
     const email = req.query.email;
     console.log(email);
-    let file = fs.readFileSync("userPage.html", "utf-8");
+    let file = fs.readFileSync("/userPage.html", "utf-8");
   } catch (err) {
     console.error("Error in /reviewer.html route:", err);
     res.status(500)
@@ -503,7 +567,7 @@ app.get("/reviewerPageOpen.html", async (req, res) => {
   try {
    
     const documentName = req.query.documentName || "No email provided";
-    let file = fs.readFileSync("/reviewerPageOpen.html", "utf-8");
+    let file = fs.readFileSync("./reviewPaged.html", "utf-8");
     file = file.replace("<!-- Dynamic email here -->", documentName);
     res.send(file);
   } catch (err) {
@@ -611,7 +675,19 @@ app.post("/getNoComments", async (req, res) => {
   }
 });
 
-
+app.get("/getUserDetails",async(req,res)=>{
+  try {
+    const {email} = req.body;
+    const user = await userSchema.findOne({email:email});
+    if(!user){
+      return res.status(404).json({error:"User not found"});
+    }
+    console.log(res.json(user));
+    return res.json(user);
+  } catch (err) {
+    console.error("Error in /reviewer.html route:", err);
+}
+})
 
 app.post("/getUserDetails",async(req,res)=>{
   try {
@@ -633,7 +709,7 @@ app.get("/reviewer.html", async (req, res) => {
     const mail = req.query;
     const email = Object.keys(mail)[0] || "No email provided";
 
-    const file = fs.readFileSync("reviewer.html", "utf-8");
+    const file = fs.readFileSync("/reviewer.html", "utf-8");
     // return res.send(file);
     const documentName = req.query.documentName;
     res.send(html.replace("documentName", email));
@@ -651,7 +727,7 @@ app.get("/userPage.html", async (req, res) => {
     // Extract email from the query parameter
     const email = req.query.email || "No email provided";
 
-    const file = fs.readFileSync("userPage.html", "utf-8");
+    const file = fs.readFileSync("/userPage.html", "utf-8");
     // return res.send(file);
     res.send(file);
   } catch (err) {
@@ -661,6 +737,85 @@ app.get("/userPage.html", async (req, res) => {
       .send("<h3>An error occurred while loading the reviewer page.</h3>");
   }
 });
+
+
+import path from 'path';
+
+// Middleware for handling file upload
+app.use(fileUpload());
+
+// Serve static files (like PDFs)
+// app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// MongoDB connection
+
+// Define the schema for storing documents
+const documentSchema = new mongoose.Schema({
+  name: String,
+  filePath: String,
+  uploadedAt: { type: Date, default: Date.now }
+});
+
+// Model for the document
+const Document1 = mongoose.model('Document', documentSchema);
+
+// Set up the route for uploading the file
+app.post('/upload', (req, res) => {
+  if (!req.files || !req.files.pdfFile) {
+    return res.status(400).send('No files were uploaded.');
+  }
+
+  const pdfFile = req.files.pdfFile;
+  const uploadPath = path.join(__dirname, 'uploads', pdfFile.name);
+
+  // Save the file to the uploads folder
+  pdfFile.mv(uploadPath, async (err) => {
+    if (err) {
+      return res.status(500).send(err);
+    }
+
+    // Store the document details in the database
+    const newDocument = new Document1({
+      name: pdfFile.name,
+      filePath: uploadPath
+    });
+    await newDocument.save();
+
+    res.send('File uploaded and document saved to database.');
+  });
+});
+
+// Get the list of uploaded documents
+app.get('/documents', async (req, res) => {
+  const documents = await Document.find();
+  res.json(documents);
+});
+
+// Serve the frontend HTML file
+app.get('/demo.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'frontend', 'demo.html'));
+});
+
+// Start the server
+// app.listen(3000, () => {
+//   console.log('Server running on http://localhost:3000');
+// });
+
+
+
+app.get('/files/:id', (req, res) => {
+  const fileId = new mongoose.Types.ObjectId(req.params.id);
+
+  // Download file from GridFS
+  const downloadStream = gfs.openDownloadStream(fileId);
+
+  downloadStream.pipe(res).on('error', (err) => {
+    res.status(404).send('File not found: ' + err.message);
+  });
+});
+
+app.listen(3000, () => console.log('Server running on port 3000'));
+
 
 app.get("/reviewerPageOpen", (req, res) => {
   // Access query parameters
@@ -676,10 +831,10 @@ app.get("/reviewerPageOpen", (req, res) => {
   });
 });
 
-app.get("/routes/documents/tracking", async (req, res) => {
+app.post("/routes/documents/tracking", async (req, res) => {
   try {
     const data = await DocData.find();
-    res.json(data); // Send data as JSON response
+    return res.json(data); // Send data as JSON response
   } catch (err) {
     console.error("Error:", err);
     res.status(500).json({ error: "Internal Server Error" }); // Send error response
@@ -1021,7 +1176,7 @@ app.get("/signaturePage.html", async (req, res) => {
 app.get("/approver.html", async (req, res) => {
   try {
 
-    const file = fs.readFileSync("approver.html", "utf-8");
+    const file = fs.readFileSync("/approver.html", "utf-8");
     return res.send(file);
   } catch (err) {
     console.log("error in getting file line number 814" + err);
@@ -1061,8 +1216,6 @@ app.get("/", async (req, res) => {
 //mailing
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
-// import { CompositionListInstance } from "twilio/lib/rest/video/v1/composition.js";
-// import { Console } from "console";
 
 //sending emails
 app.post("/routes/notifications/send", async (req, res) => {
@@ -1318,6 +1471,18 @@ app.put("/routes/documents/approved", async (req, res) => {
   }
 });
 
+app.post("/viewAllDocuments", async (req, res) => {
+  try{
+    const result = await DocData.find().toArray();
+    console.log(result);
+    res.send(result);
+  }catch(err){
+    console.log(err.message);
+  }
+  }
+)
+
+
 app.get("/documentstatus", async (req, res) => {
   const pro = { name: 1, status: 1, reviewers: 1, approver: 1, _id: 0 };
   const documents = await DocData.find({}, pro);
@@ -1507,10 +1672,47 @@ app.post("/routes/documents/rejected", async (res, req) => {
 //   };
 // });
 
-// app.get("/getUsers", async (req, res) => {
-//   const users = await userSchema.find();
-//   return await res.json(users);
-// });
+app.post("/getUsersDetails",async(req,res)=>{
+    try{
+      console.log(req.body);
+        const {email} = req.body;
+        const result = await userSchema.find({email:email});
+        // console.log(result);
+        res.status(200).json(result); 
+        return res.json(result);
+    }catch(error){
+        console.log(error);
+    }
+    })
+
+
+
+app.post("/searchUsers", async (req, res) => {
+  try {
+    // Perform partial match using regex for email, name, or EmployeeID
+    const users = await userSchema.find({
+      $or: [
+        { email: { $regex: req.body.search, $options: 'i' } },
+        { name: { $regex: req.body.search, $options: 'i' } },
+      ],
+      // Exclude users with the role 'user'
+      role: { $ne: 'user' }
+    });
+
+    // Return the matched users
+    return res.json(users);
+  } catch (error) {
+    console.error("Error searching users:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
+
+
+app.get("/getUsers", async (req, res) => {
+  const users = await userSchema.find();
+  return await res.json(users);
+});
 
 // app.get("/getUser/:id", async (req, res) => {
 //   const { id } = req.params;
@@ -1519,10 +1721,11 @@ app.post("/routes/documents/rejected", async (res, req) => {
 // });
 
 // Start the server
-app.listen(3000, (req, res, next) => {
-  console.log(`Server is running on http://localhost:${3000}`);
-  next;
-});
+// app.listen(3000, (req, res, next) => {
+//   console.log(`Server is running on http://localhost:${3000}`);
+//   next;
+// });
+
 
 // // Helper function to send email when a comment is submitted
 function sendCommentNotification(userId, comment, document) {
