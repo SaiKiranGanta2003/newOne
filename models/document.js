@@ -10,26 +10,16 @@ const documentSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  file: {
-    type: Buffer,
-    required: true,
-  },
-
-  size: {
-    type: Object,
-    required: true,
-  },
   reviewers: [{
     // type: mongoose.Schema.Types.ObjectId,
     type:String,
-    unique: true,
     required: false,
   }],
-  approver: {
+  approver: [{
     // type: mongoose.Schema.Types.ObjectId,
-    type : String,
-    required: true,
-  },
+    type:String,
+    required: false,
+  }],
   status: {
     type: String,
     required: true
@@ -51,8 +41,12 @@ const documentSchema = new mongoose.Schema({
     }],
   }, {
   timestamps: true,
+  
 });
+
 // Ensure no OverwriteModelError by checking if model already exists
 const modelName = 'DocumentData'; // Replace with your model 
+
+
 const Document = mongoose.models[modelName] || mongoose.model(modelName, documentSchema);
 export default Document;
