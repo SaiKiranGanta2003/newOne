@@ -138,7 +138,11 @@ mongoose
   .connect(
     "mongodb+srv://root:Root123@medicingcluster.cfdca.mongodb.net/?retryWrites=true&w=majority&appName=medicingCluster"
   )
-  .then(() => console.log("mongo db connected"))
+  .then(() =>{
+    // const db = client.db("test");
+    // bucket = new GridFSBucket(db, { bucketName: "uploads" });
+    console.log("Connected to MongoDB and GridFSBucket initialized.");
+  })
   .catch((err) => console.log(err));
 
 // dummy function
@@ -193,7 +197,7 @@ app.get("/routes/showUsers", async (req, res) => {
 
 app.get('/reigeister.html',async(req,res)=>{
   try {
-    const file = fs.readFileSync("/reigeister.html", "utf-8");
+    const file = fs.readFileSync("./frontend1/reigeister.html", "utf-8");
     return res.send(file);
   } catch (err) {
     console.log("error in getting file line number 524" + err);
@@ -202,7 +206,7 @@ app.get('/reigeister.html',async(req,res)=>{
 
   app.get('/forgetPassword.html',async(req,res)=>{
     try {
-      const file = fs.readFileSync("/forgetPassword.html", "utf-8");
+      const file = fs.readFileSync("./frontend1/forgetPassword.html", "utf-8");
       return res.send(file);
     } catch (err) {
       console.log("error in getting file line number 524" + err);
@@ -287,6 +291,7 @@ app.put("/activeUser",async(req,res)=>{
     console.log(err)
   }
 })
+let bucket;
 
 app.put("/deactiveUser",async(req,res)=>{
   try {
@@ -299,27 +304,128 @@ app.put("/deactiveUser",async(req,res)=>{
 })
 // import multer from 'multer';
 const upload = multer().single('file'); // Middleware to parse file uploads
+import { Readable } from 'stream';
+import { MongoClient, GridFSBucket, ObjectId } from "mongodb";
+dotenv.config();
+const mongoURI = process.env.MONGO_URI; // Update with your MongoDB connection string
+const DBclient = new MongoClient(mongoURI);
+const db = DBclient.db("test");
+bucket = new GridFSBucket(db, { bucketName: "Documents" });
 
-app.post("/routes/documents/resend/:_id", upload, async (req, res) => {
+
+
+app.post("/routes/documents/upload",upload,
+  async (req, res) => {
+    console.log("req.body",req.body)
+    const { user,name, reviewers, approver, status } = req.body;
+    try {
+
+
+
+
+      const fileName = req.body.name;
+      // Get the file name from the request body
+      const fileData = req.body.file; // Get the file from the request
+
+
+      
+    if (!fileData || !fileName) {
+      return res.status(400).json({ error: "File and file name are required" });
+    }
+
+      const titlename = name;
+      const approversList = [];
+      approversList.unshift(JSON.parse(approver).email);
+      let reviewersList = [];
+      for(let i=0;i<reviewers.length;i++){
+        reviewersList.unshift((reviewers[i]).email);
+      }
+      console.log("reviwers")
+      console.log(reviewersList)
+
+      const fileStream = new Readable();
+      fileStream.push(req.file.buffer);
+      fileStream.push(null);
+      
+      const uploadStream = bucket.openUploadStream(req.file.originalname, {
+        contentType: req.file.mimetype,
+    });
+    fileStream.pipe(uploadStream);
+  
+    uploadStream.on("error", (err) => {
+        console.error("Error uploading file:", err);
+        return res.status(500).json({ error: "Failed to upload file" });
+    });
+  
+    uploadStream.on("finish", async () => {
+        console.log("File uploaded successfully:", uploadStream.id);
+    });
+
+
+      const newDocument = new Document({
+        user:user,
+        name: titlename,
+        file: file,
+        reviewers: reviewersList,
+        approver: approversList ,
+        status: status,
+        fileId : uploadStream.id
+      });
+      await newDocument.save();
+      res.status(201).json({
+        message: "Document uploaded successfully",
+        document: newDocument,
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Server error" });
+    }
+  }
+);
+
+
+
+
+app.post("/routes/documents/resend/:_id",upload, async (req, res) => {
   try {
-    const { _id } = req.params; // Get the document ID from URL parameters
+    const { _id } = req.body; // Get the document ID from URL parameters
     const fileName = req.body.fileName; // Get the file name from the request body
     const fileData = req.file; // Get the file from the request
+    bucket = new GridFSBucket(db, { bucketName: "documentdatas" });
 
     if (!fileData || !fileName) {
       return res.status(400).json({ error: "File and file name are required" });
     }
 
-    // Perform your file handling logic (e.g., upload to Google Drive, save metadata, etc.)
-    const updatedDocument = await DocData.updateOne(
-      { _id: _id }, // Match document by ID
-      {
-        $set: {
-          // file: fileData.buffer, // Store file data (or a reference like a Google Drive URL)
-          name: fileName, // Store the file name
+    const fileStream = new Readable();
+    fileStream.push(req.file.buffer);
+    fileStream.push(null);
+    
+    const uploadStream = bucket.openUploadStream(req.file.originalname, {
+      contentType: req.file.mimetype,
+  });
+  fileStream.pipe(uploadStream);
+
+  uploadStream.on("error", (err) => {
+      console.error("Error uploading file:", err);
+      return res.status(500).json({ error: "Failed to upload file" });
+  });
+
+  uploadStream.on("finish", async () => {
+      console.log("File uploaded successfully:", uploadStream.id);
+      const updatedDocument = await DocData.updateOne(
+        { _id: _id }, // Match document by ID
+        {
+          $set: {
+            file: uploadStream.id,  // Store file data (or a reference like a Google Drive URL)
+            name: fileName, // Store the file name
+          }
         }
-      }
-    );
+      );
+  });
+    // Perform your file handling logic (e.g., upload to Google Drive, save metadata, etc.)
+    console.log(updatedDocument);
+    console.log("_id",_id)
 
     if (updatedDocument.modifiedCount === 0) {
       return res.status(404).json({ error: "Document not found or not updated" });
@@ -330,6 +436,16 @@ app.post("/routes/documents/resend/:_id", upload, async (req, res) => {
     console.error("Error:", err.message);
     res.status(500).json({ error: "Internal server error" });
   }
+});
+
+
+app.get('/files/:id', (req, res) => {
+  const fileId = new ObjectId(req.params.id);
+  
+  const downloadStream = bucket.openDownloadStream(fileId);
+
+  downloadStream.on('error', () => res.status(404).send('File not found'));
+  downloadStream.pipe(res);
 });
 
 
@@ -482,39 +598,6 @@ app.put("/routes/users/update", async (req, res) => {
   }
 });
 
-app.post("/routes/documents/upload",
-  async (req, res) => {
-    const { user,name, file, reviewers, approver, status } = req.body;
-    try {
-
-      const titlename = name;
-      const approversList = [];
-      approversList.unshift(JSON.parse(approver).email);
-      let reviewersList = [];
-      for(let i=0;i<reviewers.length;i++){
-        reviewersList.unshift((reviewers[i]).email);
-      }
-      console.log("reviwers")
-      console.log(reviewersList)
-      const newDocument = new Document({
-        user:user,
-        name: titlename,
-        file: file,
-        reviewers: reviewersList,
-        approver: approversList ,
-        status: status,
-      });
-      await newDocument.save();
-      res.status(201).json({
-        message: "Document uploaded successfully",
-        document: newDocument,
-      });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: "Server error" });
-    }
-  }
-);
 
 // dummy function
 app.get("/routes/showDocuments", async (req, res) => {
@@ -532,7 +615,7 @@ app.get("/routes/showDocuments", async (req, res) => {
 // to show the log in page
 app.get("/index.html", async (req, res) => {
   try {
-    const file = fs.readFileSync("/index.html", "utf-8");
+    const file = fs.readFileSync("./frontend1/index.html", "utf-8");
     return res.send(file);
   } catch (err) {
     console.log("error in getting file line number 524" + err);
@@ -541,7 +624,7 @@ app.get("/index.html", async (req, res) => {
 
 app.get("/adminPage.html", async (req, res) => {
   try {
-    const file = fs.readFileSync("/adminPage.html", "utf-8");
+    const file = fs.readFileSync("./frontend1/adminPage.html", "utf-8");
     return res.send(file);
   } catch (err) {
     console.log("error in getting file line number 524" + err);
@@ -555,7 +638,7 @@ app.get("/userPage", async (req, res) => {
    
     const email = req.query.email;
     console.log(email);
-    let file = fs.readFileSync("/userPage.html", "utf-8");
+    let file = fs.readFileSync("./frontend1/userPage.html", "utf-8");
   } catch (err) {
     console.error("Error in /reviewer.html route:", err);
     res.status(500)
@@ -567,7 +650,7 @@ app.get("/reviewerPageOpen.html", async (req, res) => {
   try {
    
     const documentName = req.query.documentName || "No email provided";
-    let file = fs.readFileSync("./reviewPaged.html", "utf-8");
+    let file = fs.readFileSync("./frontend1/reviewerPageOpen.html", "utf-8");
     file = file.replace("<!-- Dynamic email here -->", documentName);
     res.send(file);
   } catch (err) {
@@ -709,7 +792,7 @@ app.get("/reviewer.html", async (req, res) => {
     const mail = req.query;
     const email = Object.keys(mail)[0] || "No email provided";
 
-    const file = fs.readFileSync("/reviewer.html", "utf-8");
+    const file = fs.readFileSync("./frontend1/reviewer.html", "utf-8");
     // return res.send(file);
     const documentName = req.query.documentName;
     res.send(html.replace("documentName", email));
@@ -727,7 +810,7 @@ app.get("/userPage.html", async (req, res) => {
     // Extract email from the query parameter
     const email = req.query.email || "No email provided";
 
-    const file = fs.readFileSync("/userPage.html", "utf-8");
+    const file = fs.readFileSync("./frontend1/userPage.html", "utf-8");
     // return res.send(file);
     res.send(file);
   } catch (err) {
@@ -1176,7 +1259,7 @@ app.get("/signaturePage.html", async (req, res) => {
 app.get("/approver.html", async (req, res) => {
   try {
 
-    const file = fs.readFileSync("/approver.html", "utf-8");
+    const file = fs.readFileSync("./frontend1/approver.html", "utf-8");
     return res.send(file);
   } catch (err) {
     console.log("error in getting file line number 814" + err);
@@ -1727,7 +1810,7 @@ app.get("/getUsers", async (req, res) => {
 // });
 
 app.get('/demo2.html', (req, res) => {
-  const file = fs.readFileSync('/demo2.html', "utf-8");
+  const file = fs.readFileSync('./frontend1/demo2.html', "utf-8");
   
   // Set the correct Content-Type for an HTML file
   res.setHeader("Content-Type", "text/html");
