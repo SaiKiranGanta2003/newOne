@@ -305,7 +305,9 @@ app.put("/deactiveUser",async(req,res)=>{
 // import multer from 'multer';
 const upload = multer().single('file'); // Middleware to parse file uploads
 import { Readable } from 'stream';
-import { MongoClient, GridFSBucket, ObjectId } from "mongodb";
+import pkg from 'mongodb';
+const { MongoClient, GridFSBucket, ObjectId } = pkg;
+
 dotenv.config();
 const mongoURI = process.env.MONGO_URI; // Update with your MongoDB connection string
 const DBclient = new MongoClient(mongoURI);
