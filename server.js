@@ -197,7 +197,7 @@ app.get("/routes/showUsers", async (req, res) => {
 
 app.get('/reigeister.html',async(req,res)=>{
   try {
-    const file = fs.readFileSync("./frontend1/reigeister.html", "utf-8");
+    const file = fs.readFileSync("/reigeister.html", "utf-8");
     return res.send(file);
   } catch (err) {
     console.log("error in getting file line number 524" + err);
@@ -206,7 +206,7 @@ app.get('/reigeister.html',async(req,res)=>{
 
   app.get('/forgetPassword.html',async(req,res)=>{
     try {
-      const file = fs.readFileSync("./frontend1/forgetPassword.html", "utf-8");
+      const file = fs.readFileSync("/forgetPassword.html", "utf-8");
       return res.send(file);
     } catch (err) {
       console.log("error in getting file line number 524" + err);
@@ -314,24 +314,12 @@ bucket = new GridFSBucket(db, { bucketName: "Documents" });
 
 
 
-app.post("/routes/documents/upload",upload,
+app.post("/routes/documents/upload",
   async (req, res) => {
     console.log("req.body",req.body)
-    const { user,name, reviewers, approver, status } = req.body;
+    const { user,name,file, reviewers, approver, status } = req.body;
     try {
 
-
-
-
-      const fileName = req.body.name;
-      // Get the file name from the request body
-      const fileData = req.body.file; // Get the file from the request
-
-
-      
-    if (!fileData || !fileName) {
-      return res.status(400).json({ error: "File and file name are required" });
-    }
 
       const titlename = name;
       const approversList = [];
@@ -343,24 +331,6 @@ app.post("/routes/documents/upload",upload,
       console.log("reviwers")
       console.log(reviewersList)
 
-      const fileStream = new Readable();
-      fileStream.push(req.file.buffer);
-      fileStream.push(null);
-      
-      const uploadStream = bucket.openUploadStream(req.file.originalname, {
-        contentType: req.file.mimetype,
-    });
-    fileStream.pipe(uploadStream);
-  
-    uploadStream.on("error", (err) => {
-        console.error("Error uploading file:", err);
-        return res.status(500).json({ error: "Failed to upload file" });
-    });
-  
-    uploadStream.on("finish", async () => {
-        console.log("File uploaded successfully:", uploadStream.id);
-    });
-
 
       const newDocument = new Document({
         user:user,
@@ -369,7 +339,6 @@ app.post("/routes/documents/upload",upload,
         reviewers: reviewersList,
         approver: approversList ,
         status: status,
-        fileId : uploadStream.id
       });
       await newDocument.save();
       res.status(201).json({
@@ -615,7 +584,7 @@ app.get("/routes/showDocuments", async (req, res) => {
 // to show the log in page
 app.get("/index.html", async (req, res) => {
   try {
-    const file = fs.readFileSync("./frontend1/index.html", "utf-8");
+    const file = fs.readFileSync("/index.html", "utf-8");
     return res.send(file);
   } catch (err) {
     console.log("error in getting file line number 524" + err);
@@ -624,7 +593,7 @@ app.get("/index.html", async (req, res) => {
 
 app.get("/adminPage.html", async (req, res) => {
   try {
-    const file = fs.readFileSync("./frontend1/adminPage.html", "utf-8");
+    const file = fs.readFileSync("/adminPage.html", "utf-8");
     return res.send(file);
   } catch (err) {
     console.log("error in getting file line number 524" + err);
@@ -638,7 +607,7 @@ app.get("/userPage", async (req, res) => {
    
     const email = req.query.email;
     console.log(email);
-    let file = fs.readFileSync("./frontend1/userPage.html", "utf-8");
+    let file = fs.readFileSync("/userPage.html", "utf-8");
   } catch (err) {
     console.error("Error in /reviewer.html route:", err);
     res.status(500)
@@ -650,7 +619,7 @@ app.get("/reviewerPageOpen.html", async (req, res) => {
   try {
    
     const documentName = req.query.documentName || "No email provided";
-    let file = fs.readFileSync("./frontend1/reviewerPageOpen.html", "utf-8");
+    let file = fs.readFileSync("/reviewerPageOpen.html", "utf-8");
     file = file.replace("<!-- Dynamic email here -->", documentName);
     res.send(file);
   } catch (err) {
@@ -792,7 +761,7 @@ app.get("/reviewer.html", async (req, res) => {
     const mail = req.query;
     const email = Object.keys(mail)[0] || "No email provided";
 
-    const file = fs.readFileSync("./frontend1/reviewer.html", "utf-8");
+    const file = fs.readFileSync("/reviewer.html", "utf-8");
     // return res.send(file);
     const documentName = req.query.documentName;
     res.send(html.replace("documentName", email));
@@ -810,7 +779,7 @@ app.get("/userPage.html", async (req, res) => {
     // Extract email from the query parameter
     const email = req.query.email || "No email provided";
 
-    const file = fs.readFileSync("./frontend1/userPage.html", "utf-8");
+    const file = fs.readFileSync("/userPage.html", "utf-8");
     // return res.send(file);
     res.send(file);
   } catch (err) {
@@ -873,16 +842,6 @@ app.get('/documents', async (req, res) => {
   const documents = await Document.find();
   res.json(documents);
 });
-
-// Serve the frontend HTML file
-app.get('/demo.html', (req, res) => {
-  res.sendFile(path.join(__dirname, 'frontend', 'demo.html'));
-});
-
-// Start the server
-// app.listen(3000, () => {
-//   console.log('Server running on http://localhost:3000');
-// });
 
 
 
@@ -1259,7 +1218,7 @@ app.get("/signaturePage.html", async (req, res) => {
 app.get("/approver.html", async (req, res) => {
   try {
 
-    const file = fs.readFileSync("./frontend1/approver.html", "utf-8");
+    const file = fs.readFileSync("/approver.html", "utf-8");
     return res.send(file);
   } catch (err) {
     console.log("error in getting file line number 814" + err);
@@ -1810,7 +1769,7 @@ app.get("/getUsers", async (req, res) => {
 // });
 
 app.get('/demo2.html', (req, res) => {
-  const file = fs.readFileSync('./frontend1/demo2.html', "utf-8");
+  const file = fs.readFileSync('/demo2.html', "utf-8");
   
   // Set the correct Content-Type for an HTML file
   res.setHeader("Content-Type", "text/html");
